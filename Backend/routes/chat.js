@@ -1,3 +1,5 @@
+import {getOpenAIAPIResponse} from "../utils/openai";
+
 //Get all threads
 router.get("/thread", async(req, res) => {
     try{
@@ -39,4 +41,38 @@ router.delete("thread/:threadId", async(req, res) => {
         console.log(err);
         res.status(500).json({error: "Failed to delete thread"})
     }
-})
+});
+
+router.post("/chat", async(req, res) => {
+    const {threadId, message} = req.body;
+
+    if(!threadId || !message){
+        res.status(400).json({error: "missing required field"});
+    }
+
+    try{
+        const thread = await Thread.findOne({threadId});
+
+        if(!thread){
+            //create a new thread in DB
+            thread = new Thread({
+                threadId,
+                title: message,
+                messages: [{role: "user", content: message}]
+            });
+        }else{
+            thread.messages.push({role: "user", content: message});
+        }
+
+        const assistantReply = await getOpenAIAPIResponse(message);
+
+        thread.messages.push({role: "assistant", content: message});
+        thread.updatedAt = new Date();
+        
+        await thread.save();
+        res.json({reply: assistantReply});
+    }catch(err){
+        console.log(err);
+        res.status(500).json({error: "something went wrong"});
+    }
+});
