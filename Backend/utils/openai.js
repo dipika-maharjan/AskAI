@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-const getOpenAIAPIResponse = async(message) => {
+export const getOpenAIAPIResponse = async(message) => {
     const options = {
         method: "POST",
         headers: {
@@ -8,7 +8,7 @@ const getOpenAIAPIResponse = async(message) => {
             "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`
         },
         body: JSON.stringify({
-            model: "openai/gpt-5.2",
+            model: "openai/gpt-4o-mini",
             messages: [{
                 role: "user",
                 content: message
@@ -17,11 +17,23 @@ const getOpenAIAPIResponse = async(message) => {
     };
     try{
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", options);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            console.error("[OpenAI] API error:", error);
+            return `Error from API: ${error?.error?.message ?? "Unknown error"}`;
+        }
+        
         const data = await response.json();
-        return data.choices[0].message.content;  //reply
+        
+        if (!data?.choices?.[0]?.message?.content) {
+            console.error("[OpenAI] Unexpected response structure:", data);
+            return "I couldn't generate a response. Please try again.";
+        }
+        
+        return data.choices[0].message.content;
     }catch(err){
-        console.log(err);
+        console.error("[OpenAI] Request failed:", err?.message ?? err);
+        return `Error: ${err?.message ?? "Unknown error"}`;
     }
-}
-
-export default getOpenAIAPIResponse;
+};
