@@ -3,9 +3,10 @@ import Chat from './Chat.jsx';
 import { useContext, useState } from 'react';
 import { MyContext } from './MyContext.jsx';
 import { SyncLoader } from 'react-spinners';
+import { useEffect } from 'react';
 
 function ChatWindow(){
-    const {prompt, setPrompt, reply, setReply, currThreadId} = useContext(MyContext);
+    const {prompt, setPrompt, reply, setReply, currThreadId, prevChats, setPrevChats} = useContext(MyContext);
     const [loading, setLoading] = useState(false);
 
     const getReply = async() => {
@@ -31,6 +32,21 @@ function ChatWindow(){
         }
         setLoading(false);
     }
+
+    useEffect(() => {
+        if(prompt && reply) {
+            setPrevChats(prevChats => (
+                [...prevChats, {
+                    role: "user",
+                    content: prompt
+                }, {
+                    role: "assistant",
+                    content: reply
+                }]
+            ));
+        }
+        setPrompt("")
+    }, [reply]);
     return(
         <div className="chatWindow">
             <div className="navbar">

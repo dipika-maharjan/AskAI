@@ -55,27 +55,39 @@ router.post("/chat", async(req, res) => {
     }
 
     try{
-        let thread = await Thread.findOne({threadId});
-
-        if(!thread){
-            //create a new thread in DB
-            thread = new Thread({
-                threadId,
-                title: message,
-                messages: [{role: "user", content: message}]
-            });
-        }else{
-            thread.messages.push({role: "user", content: message});
-        }
-
         const assistantReply = await getOpenAIAPIResponse(message);
 
-        thread.messages.push({role: "assistant", content: assistantReply});
-        thread.updatedAt = new Date();
-        
-        await thread.save();
+        const thread = await Thread.findOneAndUpdate(
+            { threadId },
+            {
+                $setOnInsert: {
+                    threadId,
+                    title: message,
+                    createdAt: new Date(),
+                },
+                $set: {
+                    updatedAt: new Date(),
+                },
+                $push: {
+                    messages: {
+                        $each: [
+                            { role: "user", content: message },
+                            { role: "assistant", content: assistantReply },
+                        ],
+                    },
+                },
+            },
+            { upsert: true, new: true }
+        );
+
         res.json({reply: assistantReply});
     }catch(err){
+        if (err?.code === 11000) {
+            return res.status(409).json({
+                error: "Thread already exists. Try sending a new message to the same threadId or use a new threadId.",
+            });
+        }
+
         console.log(err);
         res.status(500).json({error: "something went wrong"});
     }
