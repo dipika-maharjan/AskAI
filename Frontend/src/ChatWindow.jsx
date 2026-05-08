@@ -6,11 +6,12 @@ import { SyncLoader } from 'react-spinners';
 import { useEffect } from 'react';
 
 function ChatWindow(){
-    const {prompt, setPrompt, reply, setReply, currThreadId, prevChats, setPrevChats} = useContext(MyContext);
+    const {prompt, setPrompt, reply, setReply, currThreadId, prevChats, setPrevChats, setNewChat} = useContext(MyContext);
     const [loading, setLoading] = useState(false);
 
     const getReply = async() => {
-        setLoading(true)
+        setLoading(true);
+        setNewChat(false);
         const options = {
             method: "POST",
             headers: {
