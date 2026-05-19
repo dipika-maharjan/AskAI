@@ -4,6 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import JSON5 from "json5";
 import chatRouter from "./routes/chat.js";
+import authRouter from './routes/auth.js';
 
 const app = express();
 const PORT = 8080;
@@ -31,6 +32,7 @@ app.use((req, res, next) => {
 
 // Mount routes
 app.use("/api", chatRouter);
+app.use('/auth', authRouter);
 
 app.listen(PORT, () => {
     console.log(`server running at ${PORT}`);
