@@ -13,11 +13,13 @@ function ChatWindow(){
     const getReply = async() => {
         setLoading(true);
         setNewChat(false);
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
         const options = {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            method: 'POST',
+            headers,
             body: JSON.stringify({
                 message: prompt,
                 threadId: currThreadId
