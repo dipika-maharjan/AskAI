@@ -1,19 +1,32 @@
 import { useContext, useEffect } from 'react';
 import './Sidebar.css';
-import { MyContext } from './MyContext';
+import { MyContext } from './MyContext.jsx';
 import {v1 as uuidv1} from "uuid";
 
 function Sidebar(){
-    const {allThreads, setAllThreads, currThreadId, setNewChat, setPrompt, setReply, setCurrThreadId, setPrevChats} = useContext(MyContext);
+    const { token, logout, allThreads, setAllThreads, currThreadId, setNewChat, setPrompt, setReply, setCurrThreadId, setPrevChats } = useContext(MyContext);
 
     const getAllThreads = async () => {
         try{
-            const response = await fetch("http://localhost:8080/api/thread")
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
+
+            const response = await fetch("http://localhost:8080/api/thread", { headers })
             const res = await response.json();
-            const filteredData = res.map(thread => ({threadId: thread.threadId, title: thread.title}))
-            //console.log(filteredData);
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    logout(true);
+                    return;
+                }
+                console.log(res);
+                setAllThreads([]);
+                return;
+            }
+
+            const threadArray = Array.isArray(res) ? res : [];
+            const filteredData = threadArray.map(thread => ({threadId: thread.threadId, title: thread.title}))
             setAllThreads(filteredData);
-            // store threadId, title for thread display
         }catch(err){
             console.log(err);
         }
@@ -21,7 +34,7 @@ function Sidebar(){
 
     useEffect(() => {
         getAllThreads();
-    }, [currThreadId])
+    }, [currThreadId, token])
 
     const createNewChat = () => {
         setNewChat(true);
@@ -34,10 +47,22 @@ function Sidebar(){
     const changeThread = async (newThreadId) => {
         setCurrThreadId(newThreadId);
         try{
-            const response = await fetch(`http://localhost:8080/api/thread/${newThreadId}`);
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
+
+            const response = await fetch(`http://localhost:8080/api/thread/${newThreadId}`, { headers });
             const res = await response.json();
-            console.log(res);
-            setPrevChats(res);
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    logout(true);
+                    return;
+                }
+                console.log(res);
+                return;
+            }
+
+            setPrevChats(Array.isArray(res) ? res : []);
             setNewChat(false);
             setReply(null);
         }catch(err){
@@ -47,9 +72,20 @@ function Sidebar(){
 
     const deleteThread = async (threadId) => {
         try{
-            const response = await fetch(`http://localhost:8080/api/thread/${threadId}`, {method: "DELETE"});
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
+
+            const response = await fetch(`http://localhost:8080/api/thread/${threadId}`, {method: "DELETE", headers});
             const res = await response.json();
-            console.log(res);
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    logout(true);
+                    return;
+                }
+                console.log(res);
+                return;
+            }
 
             //updated threads re-render
             setAllThreads(prev => prev.filter(thread => thread.threadId !== threadId));
